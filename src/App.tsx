@@ -61,13 +61,11 @@ interface ScheduleData {
   }[];
 }
 
-const getAIClient = () => {
-  // Vite injects these at build time
-  // Try standard Vite env first, then custom defined process.env as fallback
-  const key = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.VITE_GEMINI_API_KEY : '');
+const getAIClient = (manualKey?: string) => {
+  // Try sources: 1. Manual 2. Vite Env 3. Process Env (defined by Vite)
+  const key = manualKey || import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.VITE_GEMINI_API_KEY : '');
 
   if (!key || key === 'undefined' || key === '""') {
-    console.error("SchedulAI: VITE_GEMINI_API_KEY not found in environment.");
     return null;
   }
 
@@ -80,6 +78,8 @@ const getAIClient = () => {
 };
 
 export default function App() {
+  const [manualKey, setManualKey] = useState('');
+  const [showKeyInput, setShowKeyInput] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [analysisPhase, setAnalysisPhase] = useState<'idle' | 'summarizing' | 'analyzing' | 'grounding' | 'complete'>('idle');
@@ -92,9 +92,10 @@ export default function App() {
   const [examDate, setExamDate] = useState('');
 
   const perform3PhaseAnalysis = async (imgData: string) => {
-    const ai = getAIClient();
+    const ai = getAIClient(manualKey);
     if (!ai) {
-      setError("API KEY MISSING: Please set VITE_GEMINI_API_KEY in Render environment variables.");
+      setError("API KEY MISSING: Setting manual fallback...");
+      setShowKeyInput(true);
       return;
     }
     setLoading(true);
@@ -199,7 +200,7 @@ export default function App() {
   };
 
   const generatePlan = async () => {
-    const ai = getAIClient();
+    const ai = getAIClient(manualKey);
     if (!ai) {
       setError("API KEY ERR: Check Environment Variables.");
       return;
@@ -363,6 +364,42 @@ export default function App() {
           <div className="max-w-4xl mx-auto space-y-10">
             
             <AnimatePresence mode="wait">
+              {/* KEY OVERRIDE */}
+              {showKeyInput && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-indigo-500/10 border border-indigo-500/20 p-8 rounded-[32px] mb-10 backdrop-blur-md"
+                >
+                  <div className="flex flex-col md:flex-row gap-6 items-center">
+                    <div className="flex-1">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400 mb-2">Protocol Override</h4>
+                      <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest leading-relaxed">
+                        The automated environment link is offline. Please provide your manual Gemini API Key.
+                      </p>
+                    </div>
+                    <div className="flex gap-4 w-full md:w-auto">
+                      <input 
+                        type="password" 
+                        placeholder="PASTE API KEY HERE"
+                        value={manualKey}
+                        onChange={(e) => setManualKey(e.target.value)}
+                        className="flex-1 md:w-64 bg-black/40 border border-white/10 rounded-2xl p-4 text-[10px] font-black tracking-widest outline-none focus:border-indigo-500"
+                      />
+                      <button 
+                        onClick={() => {
+                          setShowKeyInput(false);
+                          if (image) perform3PhaseAnalysis(image);
+                        }}
+                        className="px-6 py-4 bg-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Activate
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* PHASES & UPLOAD */}
               {!image && (
                 <motion.div 
