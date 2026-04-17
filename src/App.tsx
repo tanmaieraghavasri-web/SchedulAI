@@ -30,7 +30,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 // Internal Components
-import { supabase } from './services/supabaseService';
 
 // Type definitions
 interface Topic {
@@ -169,9 +168,6 @@ export default function App() {
       const data = JSON.parse(response.text);
       setAnalysis(data);
       setAnalysisPhase('complete');
-      
-      // Store to "Supabase"
-      await supabase.saveSchedule(data);
     } catch (err) {
       console.error(err);
       setError("Analysis system failure. Payload corrupted or inaccessible.");
