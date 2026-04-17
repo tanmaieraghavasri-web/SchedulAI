@@ -63,10 +63,11 @@ interface ScheduleData {
 
 const getAIClient = () => {
   // Vite injects these at build time
-  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  // Try standard Vite env first, then custom defined process.env as fallback
+  const key = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.VITE_GEMINI_API_KEY : '');
 
-  if (!key) {
-    console.error("SchedulAI: VITE_GEMINI_API_KEY not found in import.meta.env");
+  if (!key || key === 'undefined' || key === '""') {
+    console.error("SchedulAI: VITE_GEMINI_API_KEY not found in environment.");
     return null;
   }
 
